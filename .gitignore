@@ -1,0 +1,7 @@
+__pycache__/
+.env
+*.db
+dbt_transform/target/
+logs/
+.vscode/
+.docker/
