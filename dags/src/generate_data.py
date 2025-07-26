@@ -3,7 +3,8 @@ import pandas as pd
 import numpy as np
 from faker import Faker
 from datetime import datetime, timedelta
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
+from .data_models import TABLE_SCHEMAS
 
 fake = Faker(locale='de_DE')
 
@@ -164,63 +165,10 @@ class PettifyDataGenerator:
     def create_tables(self):
         engine = self.connect_db()
         
-        create_tables_sql = """
-
-        CREATE TABLE IF NOT EXISTS customers (
-            customer_id VARCHAR(20) PRIMARY KEY,
-            first_name VARCHAR(50) NOT NULL,
-            last_name VARCHAR(50) NOT NULL,
-            email VARCHAR(200) UNIQUE NOT NULL,
-            phone VARCHAR(20),
-            address TEXT,
-            city VARCHAR(100),
-            birthdate DATE,
-            registration_date DATE,
-            customer_status VARCHAR(20)
-        );
-        
-        CREATE TABLE IF NOT EXISTS pets (
-            pet_id VARCHAR(20) PRIMARY KEY,
-            customer_id VARCHAR(20) REFERENCES customers(customer_id),
-            pet_name VARCHAR(50) NOT NULL,
-            pet_type VARCHAR(50),
-            breed VARCHAR(100),
-            date_of_birth DATE,
-            gender CHAR(1) CHECK (gender IN ('M', 'F')),
-            weight DECIMAL(5,2),
-            vaccination BOOLEAN,
-            spayed_neutered BOOLEAN
-        );
-        
-        CREATE TABLE IF NOT EXISTS policies (
-            policy_id VARCHAR(20) PRIMARY KEY,
-            pet_id VARCHAR(20) REFERENCES pets(pet_id),
-            customer_id VARCHAR(20) REFERENCES customers(customer_id),
-            policy_type VARCHAR(20),
-            start_date DATE,
-            end_date DATE,
-            monthly_premium DECIMAL(8,2),
-            coverage_limit VARCHAR(20),
-            policy_status VARCHAR(20)
-        );
-
-        CREATE TABLE IF NOT EXISTS claims (
-            claim_id VARCHAR(20) PRIMARY KEY,
-            policy_id VARCHAR(20) REFERENCES policies(policy_id),
-            pet_id VARCHAR(20) REFERENCES pets(pet_id),
-            customer_id VARCHAR(20) REFERENCES customers(customer_id),
-            claim_date DATE,
-            claim_type VARCHAR(50),
-            claim_amount DECIMAL(10,2),
-            reimbursement_amount DECIMAL(10,2),
-            claim_status VARCHAR(20),
-            submitted_date DATE,
-            processed_date DATE
-        );
-        """
-        
         with engine.connect() as connection:
-            connection.execute(create_tables_sql)
+            for table_name, schema_sql in TABLE_SCHEMAS.items():
+                connection.execute(text(schema_sql))
+                connection.commit()
         
     def save_to_db(self, dataframe: pd.DataFrame, table_name: str):
         engine = self.connect_db()
